@@ -2,6 +2,7 @@ package pl.lzola.parser;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Stack;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -76,29 +77,35 @@ class SaxParser {
 	}
 	
 	private class StaffHandler extends org.xml.sax.helpers.DefaultHandler {
-		private boolean firstname;
-		private boolean lastename;
 
+		//As we read any XML element we will push that in this stack
+	    private Stack<String> elementStack = new Stack<String>();
+	    
 		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-			if (qName.equals("firstname")) {
-				firstname = true;
-			} else if (qName.equals("lastname")) {
-				lastename = true;
-			}
+		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {			
+			//Push it in element stack
+	        elementStack.push(qName);	        
 		}
 
 		@Override
 		public void characters(char[] ch, int start, int length) throws SAXException {
-			if (firstname) {
+			String currentElement = currentElement();
+			if ("firstname".equals(currentElement)) {
 				builder.identifiedByFirstName(new String(ch, start, length));
-				firstname = false;
-			} else if (lastename) {
+				elementStack.remove(currentElement);
+			} else if ("lastname".equals(currentElement)) {
 				builder.identifiedByLastName(new String(ch, start, length));
-				lastename = false;
+				elementStack.remove(currentElement);
 			}
 		}
 		
+		
+		/**
+	     * Utility method for getting the current element in processing
+	     * */
+	    private String currentElement() {
+	        return elementStack.peek();
+	    }
 	}
 	
 	private class EmployerHandler extends org.xml.sax.helpers.DefaultHandler {
